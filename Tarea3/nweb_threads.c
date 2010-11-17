@@ -22,7 +22,7 @@
 #define THREAD_SLEEP 1
 
 void* attendClient(void* param);
-void nwebLog(int type, char *s1, char *s2, int num);
+void Log(int type, char *s1, char *s2, int num);
 
 struct {
 	char *ext;
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 			case 'p':
 				port = atoi(optarg);
 				if (port < 1 || port > MAX_PORT)
-					nwebLog(ERROR,"Invalid port number",optarg,0);
+					Log(ERROR,"Invalid port number",optarg,0);
 				sPort = optarg;
 				break;
 			case 'd':
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 			case 't': 
 				xThreads = atoi(optarg);
 				if (xThreads < 1 || xThreads> MAX_THREADS )
-					nwebLog(ERROR,"Exceeded threads number",optarg,0);
+					Log(ERROR,"Exceeded threads number",optarg,0);
 				break;
 			case '?':
 				if (optopt == 'p' || optopt == 'd' || optopt == 't')
@@ -112,10 +112,10 @@ int main(int argc, char **argv) {
 		}
 
 	if (port < 1)
-		nwebLog(ERROR,"Port not defined","",0);
+		Log(ERROR,"Port not defined","",0);
 
 	if (NULL == directory)
-		nwebLog(ERROR,"Directory not defined","",0);
+		Log(ERROR,"Directory not defined","",0);
 
 	/* Become deamon + unstopable and no zombies children (= no wait()) */
 	if (fork() != 0)
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 	(void)setpgrp();
 
     // if (sPort != '0')
-	    nwebLog(LOG,"nweb starting",sPort,getpid());
+	    Log(LOG,"nweb starting",sPort,getpid());
 
 	// Threads array
 	thrArray = (pthread_t*) calloc (xThreads, sizeof(pthread_t));
@@ -147,28 +147,28 @@ int main(int argc, char **argv) {
 		descArr[i] = -1;
 
 		if (pthread_create( &thrArray[i], NULL, &attendClient, &descArr[i] ) != 0)
-			nwebLog(ERROR,"system call","pthread_create",0);
+			Log(ERROR,"system call","pthread_create",0);
 	}
 
 	// Setup the network socket
 	if ((listenfd = socket(AF_INET, SOCK_STREAM,0)) <0)
-		nwebLog(ERROR, "system call","socket",0);
+		Log(ERROR, "system call","socket",0);
 
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_addr.sin_port = htons(port);
 
 	if (bind(listenfd, (struct sockaddr *)&serv_addr,sizeof(serv_addr)) <0)
-		nwebLog(ERROR,"system call","bind",0);
+		Log(ERROR,"system call","bind",0);
 
 	if (listen(listenfd,64) <0)
-		nwebLog(ERROR,"system call","listen",0);
+		Log(ERROR,"system call","listen",0);
 
 	for (ex=1; ; ex++) {
 		length = sizeof(cli_addr);
 
 		if ((socketfd = accept(listenfd, (struct sockaddr *)&cli_addr, &length)) < 0)
-			nwebLog(ERROR,"system call","accept",0);
+			Log(ERROR,"system call","accept",0);
 
 		thrAvail = -1;
 		for(i = 0; i < xThreads; i++) {
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 		}
 
 		if (-1 == thrAvail) {
-			nwebLog(LOG,"All Threads're Busy","",0);
+			Log(LOG,"All Threads're Busy","",0);
 			(void)close(socketfd);
 		} else {
 			descArr[thrAvail] = socketfd;
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
 }
 
 
-void nwebLog(int type, char *s1, char *s2, int num) {
+void Log(int type, char *s1, char *s2, int num) {
 	int fd;
 	char logbuffer[BUFSIZE*2];
 
@@ -237,7 +237,7 @@ void* attendClient(void* param) {
 			ret = read(*fd,buffer,BUFSIZE);
 
 			if(ret == 0 || ret == -1) {
-				nwebLog(LOG,"failed to read browser request","",*fd); // read failure stop now
+				Log(LOG,"failed to read browser request","",*fd); // read failure stop now
 				ok = 0;
 			}
 
@@ -253,7 +253,7 @@ void* attendClient(void* param) {
 						buffer[i]='*';
 
 				if( strncmp(buffer,"GET ",4) && strncmp(buffer,"get ",4) ) {
-					nwebLog(LOG,"Only simple GET operation supported",buffer,*fd);
+					Log(LOG,"Only simple GET operation supported",buffer,*fd);
 					ok = 0;
 				}
 			}
@@ -270,7 +270,7 @@ void* attendClient(void* param) {
 				// check for illegal parent directory use ..
 				for(j=0;j<i-1;j++)
 					if(buffer[j] == '.' && buffer[j+1] == '.') {
-						nwebLog(LOG,"Parent directory (..) path names not supported",buffer,*fd);
+						Log(LOG,"Parent directory (..) path names not supported",buffer,*fd);
 						ok = 0;
 						break;
 					}
@@ -293,14 +293,14 @@ void* attendClient(void* param) {
 				}
 
 				if (fstr == 0) {
-					nwebLog(LOG,"file extension type not supported",buffer,*fd);
+					Log(LOG,"file extension type not supported",buffer,*fd);
 					ok = 0;
 				}
                 /*
                  * } else {
 
                     if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) {
-				        nwebLog(LOG, "failed to open file",&buffer[5],*fd);
+				        Log(LOG, "failed to open file",&buffer[5],*fd);
 				    ok = 0;
                     }
 
@@ -311,7 +311,7 @@ void* attendClient(void* param) {
 			if (ok) { 
                 // open the file for reading
 				if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) {
-				    nwebLog(LOG, "failed to open file",&buffer[5],*fd);
+				    Log(LOG, "failed to open file",&buffer[5],*fd);
 				    ok = 0;
                 }
 			}

@@ -37,6 +37,8 @@ struct {
 	{"tar", "image/tar" },
 	{"htm", "text/html" },
 	{"html","text/html" },
+	{"php", "text/php" },
+	{"cgi", "text/cgi" },
 	{0,0}
 };
 
@@ -73,15 +75,12 @@ int main(int argc, char **argv) {
 		switch (i) {
 			case 'p':
 				port = atoi(optarg);
-
 				if (port < 1 || port > MAX_PORT)
 					nwebLog(ERROR,"Invalid port number",optarg,0);
-
 				sPort = optarg;
 				break;
 			case 'd':
 				directory = optarg;
-
 				if( !strncmp(directory,"/"   ,2 ) || !strncmp(directory,"/etc", 5 ) ||
 					!strncmp(directory,"/bin",5 ) || !strncmp(directory,"/lib", 5 ) ||
 					!strncmp(directory,"/tmp",5 ) || !strncmp(directory,"/usr", 5 ) ||
@@ -94,14 +93,11 @@ int main(int argc, char **argv) {
 					(void)printf("ERROR: Can't Change to directory %s\n",directory);
 					exit(4);
 				}
-
 				break;
 			case 't': 
 				xThreads = atoi(optarg);
-
 				if (xThreads < 1 || xThreads> MAX_THREADS )
-					nwebLog(ERROR,"Invalid number of threads",optarg,0);
-
+					nwebLog(ERROR,"Exceeded threads number",optarg,0);
 				break;
 			case '?':
 				if (optopt == 'p' || optopt == 'd' || optopt == 't')
@@ -183,7 +179,7 @@ int main(int argc, char **argv) {
 		}
 
 		if (-1 == thrAvail) {
-			nwebLog(LOG,"NO thread AVAILABLE","",0);
+			nwebLog(LOG,"All Threads're Busy","",0);
 			(void)close(socketfd);
 		} else {
 			descArr[thrAvail] = socketfd;
@@ -288,31 +284,56 @@ void* attendClient(void* param) {
 				// work out the file type and check we support it
 				buflen=strlen(buffer);
 				fstr = (char *)0;
-				for(i=0;extensions[i].ext != 0;i++) {
+				for (i=0; extensions[i].ext != 0; i++) {
 					len = strlen(extensions[i].ext);
-					if( !strncmp(&buffer[buflen-len], extensions[i].ext, len)) {
-						fstr =extensions[i].filetype;
+					if (!strncmp(&buffer[buflen-len], extensions[i].ext, len)) {
+						fstr = extensions[i].filetype;
 						break;
 					}
 				}
 
-				if(fstr == 0) {
+				if (fstr == 0) {
 					nwebLog(LOG,"file extension type not supported",buffer,*fd);
 					ok = 0;
 				}
-			}
+                /*
+                 * } else {
 
-			if (ok) {
-				// open the file for reading
+                    if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) {
+				        nwebLog(LOG, "failed to open file",&buffer[5],*fd);
+				    ok = 0;
+                    }
+
+                }
+                */
+			}
+            
+			if (ok) { 
+                // open the file for reading
 				if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) {
-					nwebLog(LOG, "failed to open file",&buffer[5],*fd);
-					ok = 0;
-				}
+				    nwebLog(LOG, "failed to open file",&buffer[5],*fd);
+				    ok = 0;
+                }
 			}
-
+            
 			if (ok) {
 				(void)sprintf(buffer,"HTTP/1.0 200 OK\r\nContent-Type: %s\r\n\r\n", fstr);
 				(void)write(*fd,buffer,strlen(buffer));
+                /*
+                 else if (*fstr == 10) {
+                    FILE *fp;
+                    char path[130];			// line of data from unix command
+   
+                    fp = popen("script.cgi", "r");
+                    
+                    while (fgets(path, sizeof(path)-1, fp) != NULL) {
+                        
+                    }
+
+                    pclose(fp);
+
+                   ok = 0;             
+                */
 
 				// send file in 8KB block - last block may be smaller
 				while (	(ret = read(file_fd, buffer, BUFSIZE)) > 0 ) {

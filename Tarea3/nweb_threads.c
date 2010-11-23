@@ -20,6 +20,7 @@
 #define LOG   44
 #define MAX_PORT 60000
 #define THREAD_SLEEP 1
+#define MAX_SHELL 64
 
 void* attendClient(void* param);
 void Log(int type, char *s1, char *s2, int num);
@@ -37,8 +38,8 @@ struct {
 	{"tar", "image/tar" },
 	{"htm", "text/html" },
 	{"html","text/html" },
-	{"php", "text/php" },
-	{"cgi", "text/cgi" },
+	{"php", "text/html" },
+	{"cgi", "text/html" },
 	{0,0}
 };
 
@@ -223,9 +224,11 @@ void* attendClient(void* param) {
 
 	int j, file_fd, buflen, len;
 	long i, ret;
-	char * fstr;
+	char *fstr, *fext;
 	char ok = 1;
 	char buffer[BUFSIZE+1]; // static so zero filled
+    FILE *fp = NULL; // file executed
+    char shell[MAX_SHELL];
 
 	while (1) {
 		if (-1 == *fd) {
@@ -248,7 +251,7 @@ void* attendClient(void* param) {
 				else
 					buffer[0]=0;
 
-				for(i=0;i<ret;i++)	/* remove CF and LF characters */
+				for(i=0; i<ret; i++)	/* remove CF and LF characters */
 					if(buffer[i] == '\r' || buffer[i] == '\n')
 						buffer[i]='*';
 
@@ -260,7 +263,7 @@ void* attendClient(void* param) {
 
 			if (ok) {
 				// null terminate after the second space to ignore extra stuff
-				for(i=4;i<BUFSIZE;i++) {
+				for(i=4; i<BUFSIZE; i++) {
 					if(buffer[i] == ' ') { /* string is "GET URL " +lots of other stuff */
 						buffer[i] = 0;
 						break;
@@ -268,7 +271,7 @@ void* attendClient(void* param) {
 				}
 
 				// check for illegal parent directory use ..
-				for(j=0;j<i-1;j++)
+				for(j=0; j<i-1; j++)
 					if(buffer[j] == '.' && buffer[j+1] == '.') {
 						Log(LOG,"Parent directory (..) path names not supported",buffer,*fd);
 						ok = 0;
@@ -284,10 +287,13 @@ void* attendClient(void* param) {
 				// work out the file type and check we support it
 				buflen=strlen(buffer);
 				fstr = (char *)0;
+                fext = (char *)0;
 				for (i=0; extensions[i].ext != 0; i++) {
 					len = strlen(extensions[i].ext);
 					if (!strncmp(&buffer[buflen-len], extensions[i].ext, len)) {
 						fstr = extensions[i].filetype;
+                        fext = extensions[i].ext;
+                        //Log(LOG,"HH- ",fext,*fd);
 						break;
 					}
 				}
@@ -296,49 +302,62 @@ void* attendClient(void* param) {
 					Log(LOG,"file extension type not supported",buffer,*fd);
 					ok = 0;
 				}
-                /*
-                 * } else {
-
-                    if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) {
-				        Log(LOG, "failed to open file",&buffer[5],*fd);
-				    ok = 0;
-                    }
-
-                }
-                */
 			}
             
-			if (ok) { 
+
+			if (ok) {
+
                 // open the file for reading
-				if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) {
-				    Log(LOG, "failed to open file",&buffer[5],*fd);
-				    ok = 0;
+                // CGI Execution
+                if (!strncmp(extensions[i].ext, "cgi", 3)) {
+                    strcat(shell,"./");
+                    strcat(shell,&buffer[5]);
+                    Log(LOG,"CGI Script", shell, *fd);
+
+                    if ((fp = popen(shell,"r")) == NULL) {
+                        Log(LOG, "failed to open file",&buffer[5],*fd);
+                        ok = 0;
+                    }
+                // PHP Execution
+                } else if (!strncmp(extensions[i].ext, "php", 3)) {
+                    strcat(shell,"php -f ");
+                    strcat(shell,&buffer[5]);
+                    Log(LOG,"PHP Script", shell, *fd);
+
+                    if ((fp = popen(shell,"r")) == NULL) {
+                        Log(LOG, "failed to open file",&buffer[5],*fd);
+                        ok = 0;
+                    }
+                 } else {
+
+                    if ((file_fd = open(&buffer[5],O_RDONLY)) == -1) {
+                        Log(LOG, "failed to open file",&buffer[5],*fd);
+                        ok = 0;
+                    }
                 }
+
 			}
             
 			if (ok) {
 				(void)sprintf(buffer,"HTTP/1.0 200 OK\r\nContent-Type: %s\r\n\r\n", fstr);
 				(void)write(*fd,buffer,strlen(buffer));
-                /*
-                 else if (*fstr == 10) {
-                    FILE *fp;
-                    char path[130];			// line of data from unix command
-   
-                    fp = popen("script.cgi", "r");
-                    
-                    while (fgets(path, sizeof(path)-1, fp) != NULL) {
-                        
-                    }
-
-                    pclose(fp);
-
-                   ok = 0;             
-                */
 
 				// send file in 8KB block - last block may be smaller
-				while (	(ret = read(file_fd, buffer, BUFSIZE)) > 0 ) {
-					(void)write(*fd,buffer,ret);
-				}
+                // CGI or PHP 
+                if (!strncmp(extensions[i].ext, "cgi", 3) ||
+                    !strncmp(extensions[i].ext, "php", 3)) {
+                    while (fgets(buffer, BUFSIZE, fp)) { 
+                        (void)write(*fd, buffer, strlen(buffer));
+                    } 
+                    // Clear shell Array
+                    memset((void*)&shell, 0, sizeof(int)*MAX_SHELL);
+                    pclose(fp);
+                } else {
+                    while ((ret = read(file_fd, buffer, BUFSIZE)) > 0) {
+                        (void)write(*fd, buffer, ret);
+                    }
+                    close(file_fd);
+                }
 
 				//to allow socket to drain
 				sleep(1);

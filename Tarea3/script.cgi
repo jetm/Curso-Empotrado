@@ -1,5 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Cgi Ejemplo
-echo "Curso Empotrado - Tarea 3";
+echo -e "Curso Empotrado - Tarea 3, Ejecutando un Script CGI...";
 

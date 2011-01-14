@@ -3,7 +3,7 @@
 ##########################################################################
 #
 # Final Proyect: 
-# 		Desarrollo de Sistemas Empotrados Basados en Linux. 
+# 		"Desarrollo de Sistemas Empotrados Basados en Linux."
 #		Profesor: Diego Dompe. 2010
 # 
 # Setup Environment Develop	for Cross Compilation:
@@ -11,32 +11,29 @@
 #	- Emulator (QEMU From Maemo) 
 #	- Cross-compilation Toolkit (Scratchbox2 from Maemo)
 #	
-# Authors
+# Authors:
 #	- Rocio Briceño (R)
 #	- Jose David Delgado (JD) 
 #	- Stephan Salazar (S)
 #	- Javier Tiá (J)
 #
 # @TODO
-#	- Cross Compile Tarea 2 and copy lighttpd to TARGET/usr
+#	- Cross Compile Tarea 2
 #
-# Links
+# Links:
 # 	http://elinux.org/BeagleBoard
 #
 ###########################################################################
 
 set -e
 set -o errexit
-#set -x
-#set -v
+# for Debbuging
+# set -x
+# set -v
 
 # Avoid use proxy
-#unset http_proxy
-#unset ftp_proxy
-#unset all_proxy
-#unset ALL_PROXY
-#unset https_proxy
-#unset no_proxy
+#unset http_proxy; unset ftp_proxy; unset all_proxy; unset ALL_PROXY \
+#unset https_proxy; unset no_proxy
 
 DIR_ROOT=/tmp/RJDSJ_$(date +%s) # /tmp/RJDSJ_1294785522
 DIR_BUILDROOT=$DIR_ROOT/buildroot
@@ -141,20 +138,21 @@ echo $download
 
 if [[ "Y" == $(echo "$download" | tr '[:lower:]' '[:upper:]') ]]; 
 then 
-for url in $URLs
-do
-	asset=$(echo $url | sed 's/.*\///')
-	echo "$MD5s" | grep $asset | md5sum -c && { assetMD5=1; };
+	for url in $URLs
+	do
+		asset=$(echo $url | sed 's/.*\///')
+		echo "$MD5s" | grep $asset | md5sum -c && { assetMD5=1; };
 
-  	if [[ -e $asset && $assetMD5 -eq 1 ]]; then
-		echo "$url exists, skiping..."
-		echo ''
-  	else
-		wget -c -P $DIR_ROOT -O $asset --no-check-certificate $url || { echo 'Download failed.'; exit 1; }  
-  	fi
-done
-echo "$MD5s" | md5sum -c || { echo 'File Corrupt'; exit 1; }
-exit 1;
+  		if [[ -e $asset && $assetMD5 -eq 1 ]]; then
+			echo "$url exists, skiping..."
+			echo ''
+  		else
+			wget -c -P $DIR_ROOT -O $asset --no-check-certificate $url || { echo 'Download failed.'; exit 1; }  
+  		fi
+	done
+
+	echo "$MD5s" | md5sum -c || { echo 'File Corrupt'; exit 1; }
+	exit 1;
 else 
 	echo ''
 	read -p 'Necessary Files OK. Proccess Setup Compiler. ENTER'; 
@@ -167,7 +165,7 @@ fi
 # Prepare Compiler
 #
 function setup_compiler() {
-	# avoid installation in mode graphic
+	# Avoid installation in mode graphic
 	# ~/arm-2009q3-67-arm-none-linux-gnueabi.bin -i console
 
 	#
@@ -193,7 +191,9 @@ function setup_compiler() {
 
 export PATH="$DIR_ROOT/bin:$PATH"
 
+#
 # Setup Emulator QEMU
+#
 function setup_emulator() {
 	cd $DIR_ROOT
 
@@ -216,6 +216,7 @@ function setup_emulator() {
 }
 
 export PATH="$DIR_ROOT/qemu:$PATH"
+
 
 #
 # Setup Scratchbox2
@@ -275,10 +276,8 @@ function setup_mkimage() {
 	git clone git://git.denx.de/u-boot-arm.git u-boot-arm
 
 	cd $DIR_ROOT/u-boot-arm
-	# sb2
 	make -j$NCPU tools && \
 
-	# sb2
 	install tools/mkimage $DIR_ROOT/bin && \
 	
 	echo ''
@@ -300,6 +299,9 @@ function setup_kernel() {
 	rm -rf beagleboard-validation-linux
 	tar xf linux-2.6.32-bbxm-validation-20100805.tar.gz && \
 	cd beagleboard-validation-linux
+#
+# Avoid scratchbox2, problem with Ubuntu
+#
 #sb2 make -j$NCPU clean
 #sb2 make -j$NCPU distclean
 #sb2 make -j$NCPU omap3_beagle_defconfig && \
@@ -322,12 +324,13 @@ make -j$NCPU ARCH=arm CROSS_COMPILE=$DIR_COMPILER/bin/arm-none-linux-gnueabi- mo
 }
 
 
-#
-# Make Root File System (ramdisk.gz)
-# 
+# ----------------------------------------------------
+# 	Make Root File System (ramdisk.gz)
+# ----------------------------------------------------
 
 #
 # Make busybox
+#
 
 cp -v config_busybox-1.17.4 $DIR_ROOT
 
@@ -363,6 +366,7 @@ function setup_rootfs() {
 
 	echo ''
 	echo 'Installing modules kernel...'
+	# Avoiding Scratchbox2, problem with Ubuntu
 	# sb2 make -j$NCPU INSTALL_MOD_PATH=$DIR_ROOTFS modules_install
 	make -j$NCPU ARCH=arm CROSS_COMPILE=$DIR_COMPILER/bin/arm-none-linux-gnueabi- \
 	INSTALL_MOD_PATH=$DIR_ROOTFS modules_install
@@ -395,7 +399,7 @@ echo -e 'root::0:0:root:/root:/bin/ash
 daemon:*:1:1:daemon:/usr/sbin:/bin/sh
 bin:*:2:2:bin:/bin:/bin/sh
 sys:*:3:3:sys:/dev:/bin/sh
-lighttpd:*:100:100:/var/www/html:/bin/nologin
+lighttpd:*:100:100:lighttpd:/var/www/html:/bin/nologin
 nobody:*:65534:65534:nobody:/nonexistent:/bin/sh' > $DIR_ROOTFS/etc/passwd
 
 echo -e '127.0.0.1       localhost' > $DIR_ROOTFS/etc/hosts
@@ -419,7 +423,7 @@ echo -e '::sysinit:/etc/init.d/rcS
 
 echo -e '#!/bin/sh
 HOSTNAME=EMPOTRADO
-VERSION=1.0.0
+VERSION=1.0.1
 
 hostname $HOSTNAME
 
@@ -449,10 +453,10 @@ echo ""
 echo "    System for ""CURSO EMPOTRADO"" initialization..."
 echo ""
 echo "    Hostname       : $HOSTNAME"
-echo "    Hostname       : $HOSTNAME"
+#echo "    Hostname       : $HOSTNAME"
 echo "    Filesystem     : v$VERSION"
 echo "    Kernel release : `uname -v` `uname -s` `uname -r`"
-echo "    Kernel version : "
+#echo "    Kernel version : "
 echo ""
 
 #   ---------------------------------------------
@@ -509,10 +513,20 @@ status $? 0
 echo ""
 echo "System ""CURSO EMPOTRADO"" initialization complete."
 
-# Show Banner SOFTTEK/HP
+#   ---------------------------------------------
+# 	Show Banner SOFTTEK/HP
+#   ---------------------------------------------
 if [ -x /etc/motd ]; then
 	cat /etc/motd
 fi
+
+#   ---------------------------------------------
+# 	Show Start lighttpd
+#   ---------------------------------------------
+#if [ -x /sbin/lighttpd ]; then
+#	echo -e "Starting Lighttpd with basic features\n...";
+#	lighttpd -D -f /etc/lighttpd/lighttpd.conf
+#fi
 
 #   ---------------------------------------------
 #   Start "TAREA 2"
@@ -533,11 +547,11 @@ echo '
 #
 
 server.document-root 	= "/var/www/html"
-server.port 			= 3000
+server.port 			= 30000
 server.username 		= "lighttpd"
 server.groupname 		= "lighttpd"
 server.bind             = "127.0.0.1"
-#server.bind             = "192.168.1.104"
+server.event-handler 	= "poll"
 server.tag 				= "lighttpd"
 
 server.errorlog         = "/var/log/lighttpd/error.log"
@@ -569,7 +583,7 @@ index-file.names = ( "index.html", "index.htm" )
 ' > $DIR_ROOTFS/etc/lighttpd/lighttpd.conf
 
 # Test html
-echo '<html><body>
+echo '<html><title>Curso Empotrado</title><body>
 <h3>CURSO EMPOTRADO</h3>
 </body></html>
 ' > $DIR_ROOTFS/var/www/html/index.html
@@ -612,7 +626,7 @@ cd modules && arm-none-linux-gnueabi-strip $(find . -name '*.ko')
 
 echo ''
 read -p 'Setup Root File System OK. Process install/setup Lighttpd Server. ENTER'; 
-''
+echo ''
 cd $DIR_ROOT
 }
 
@@ -625,13 +639,12 @@ function setup_lighttpd() {
 	tar xf lighttpd-1.4.28.tar.gz
 	cd lighttpd-1.4.28
 	
-	# --libdir=/lib --prefix=$DIR_ROOTFS 
-	sb2 ./configure  \
+	sb2 ./configure --prefix=$DIR_ROOTFS  \
 	--disable-ipv6 --without-zlib --without-bzip2 \
 	--without-pcre --disable-lfs
 
 	sb2 make -j$NCPU 
-	sb2 make -j$NCPU DESTDIR=$DIR_ROOTFS install # 
+	sb2 make -j$NCPU DESTDIR=$DIR_ROOTFS install  
 
 # 	sudo groupadd lighttpd
 #	sudo useradd -g lighttpd -d /var/www/html -s /sbin/nologin lighttpd

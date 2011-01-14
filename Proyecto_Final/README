@@ -23,6 +23,6 @@
 	chmod +x setup_finalproject.sh
 	./setup_finalproject.sh
 
-- Lighttpd on port 30000
+- Lighttpd on port 30000 and from console run with:
 	lighttpd -D -f /etc/lighttpd/lighttpd.conf
 

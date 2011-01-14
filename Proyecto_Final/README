@@ -1,0 +1,28 @@
+##########################################################################
+#
+# Final Proyect: 
+# 		Desarrollo de Sistemas Empotrados Basados en Linux. 
+#		Profesor: Diego Dompe. 2010
+# 
+# Setup Environment Develop	for Cross Compilation:
+# 	- Compiler and toolchain (CodeSourcery)
+#	- Emulator (QEMU From Maemo) 
+#	- Cross-compilation Toolkit (Scratchbox2 from Maemo)
+#	
+# Authors
+#	- Rocio Briceño (R)
+#	- Jose David Delgado (JD) 
+#	- Stephan Salazar (S)
+#	- Javier Tiá (J)
+#
+##########################################################################
+
+- Install
+	git clone git@github.com:jetm/Curso-Empotrado.git
+	cd Curso-Empotrado/Proyecto_Final
+	chmod +x setup_finalproject.sh
+	./setup_finalproject.sh
+
+- Lighttpd on port 30000
+	lighttpd -D -f /etc/lighttpd/lighttpd.conf
+

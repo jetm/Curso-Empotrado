@@ -625,13 +625,31 @@ cp -ra $DIR_COMPILER/arm-none-linux-gnueabi/libc/lib/* . && \
 cd modules && arm-none-linux-gnueabi-strip $(find . -name '*.ko')
 
 echo ''
-read -p 'Setup Root File System OK. Process install/setup Lighttpd Server. ENTER'; 
+read -p 'Setup Root File System OK. Process install/setup Tarea 2. ENTER'; 
 echo ''
 cd $DIR_ROOT
 }
 
 
+#
+# Compile Tarea 2
+#
+function setup_tarea2() {
+	cd $DIR_ROOT
+
+	cd tarea2
+	sb2 make 
+	sb2 make -j$NCPU DESTDIR=$DIR_ROOTFS install  
+
+	read -p 'Tarea 2 OK. Process install/setup lighttpd. ENTER'; 
+
+	cd $DIR_ROOT
+}
+
+
+#
 # Setup lighttpd 
+#
 function setup_lighttpd() {
 	cd $DIR_ROOT
 
@@ -646,18 +664,16 @@ function setup_lighttpd() {
 	sb2 make -j$NCPU 
 	sb2 make -j$NCPU DESTDIR=$DIR_ROOTFS install  
 
-# 	sudo groupadd lighttpd
-#	sudo useradd -g lighttpd -d /var/www/html -s /sbin/nologin lighttpd
-
 	# Run lighttpd -f /etc/lighttpd/lighttpd.conf -D
-	read -p 'Lighttpd Server OK. Process create ramdisk.gz'; 
+	read -p 'Lighttpd Server OK. Process create <ramdisk.gz>. ENTER'; 
 
 	cd $DIR_ROOT
 }
 
 
+#
 # Setup ramdisk.gz
-
+#
 function setup_ramdisk() {
 	cd $DIR_ROOT
 
@@ -750,6 +766,7 @@ setup_emulator && \
 setup_sb2 && \
 setup_kernel && \
 setup_busybox && setup_rootfs && \
+#setup_tarea2 && \
 setup_lighttpd && \
 setup_ramdisk && \
 setup_sdcard && \

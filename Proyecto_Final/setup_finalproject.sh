@@ -638,6 +638,9 @@ function setup_tarea2() {
 	cd $DIR_ROOT
 
 	cd tarea2
+	./autogen.sh
+
+	sb2 ./configure
 	sb2 make 
 	sb2 make -j$NCPU DESTDIR=$DIR_ROOTFS install  
 

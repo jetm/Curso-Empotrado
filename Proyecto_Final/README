@@ -27,5 +27,5 @@
 	tarea2 -i <IP Address> -m <Mask Network>
 
 - Lighttpd on port 30000 and from console run with:
-	lighttpd -D -f /etc/lighttpd/lighttpd.conf
+	lighttpd -D -f /etc/lighttpd/lighttpd.conf -m /usr/lib
 

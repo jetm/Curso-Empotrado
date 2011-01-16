@@ -56,12 +56,18 @@ DIR_COMPILER=/opt/arm-2009q1 # /tmp/arm-2009q3
 URLs="https://source.ridgerun.net/packages/linux-2.6.32-bbxm-validation-20100805.tar.gz
 http://busybox.net/downloads/busybox-1.17.4.tar.bz2
 http://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-1.4.28.tar.gz
-http://beagleboard-validation.s3.amazonaws.com/deploy/201008201549/sd/beagleboard-validation-201008201549.img.gz"
+http://beagleboard-validation.s3.amazonaws.com/deploy/201008201549/sd/beagleboard-validation-201008201549.img.gz
+ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.12.zip
+http://zlib.net/zlib-1.2.5.tar.bz2
+http://bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
 
 MD5s="d90a7bca1bade8ab867366b0b85d69fe  linux-2.6.32-bbxm-validation-20100805.tar.gz
 b3254232e9919007ca803d3a4fe81f3c  busybox-1.17.4.tar.bz2
 202d36efc6324adb95a3600d2826ec6a  lighttpd-1.4.28.tar.gz
-75ac3fb3bdc45dc17a6cfd27218652d1  beagleboard-validation-201008201549.img.gz"
+75ac3fb3bdc45dc17a6cfd27218652d1  beagleboard-validation-201008201549.img.gz
+a100f7e8fd5f169f6795306c3c66d7b1  pcre-8.12.zip
+be1e89810e66150f5b0327984d8625a0  zlib-1.2.5.tar.bz2
+00b516f4704d4a7cb50a1d97e6e8e15b  bzip2-1.0.6.tar.gz"
 
 #
 # Check Start
@@ -559,6 +565,7 @@ accesslog.filename      = "/var/log/lighttpd/access.log"
 
 server.modules          = (
 		"mod_access",
+		"mod_compress",
 		"mod_accesslog",
 	    "mod_fastcgi",
 		"mod_rewrite"
@@ -656,16 +663,39 @@ function setup_tarea2() {
 function setup_lighttpd() {
 	cd $DIR_ROOT
 
+	# pcre Compilation
+	rm -rf pcre-8.12
+	unzip -q pcre-8.12.zip
+	cd pcre-8.12
+	sb2 ./configure --prefix=$DIR_ROOTFS/usr
+	sb2 make -j$NCPU
+	sb2 make -j$NCPU install
+
+	# zlib Compilation
+	rm -rf zlib-1.2.5
+	tar -jxf zlib-1.2.5.tar.bz2
+	cd zlib-1.2.5
+	sb2 ./configure --prefix=$DIR_ROOTFS/usr
+	sb2 make -j$NCPU
+	sb2 make -j$NCPU install
+
+	# bzip2 Compilation
+	rm -rf bzip2-1.0.6
+	tar -xf bzip2-1.0.6.tar.gz 
+	cd bzip2-1.0.6
+	sb2 make -j$NCPU install PREFIX=$DIR_ROOTFS/usr
+
 	rm -rf lighttpd-1.4.28
 	tar xf lighttpd-1.4.28.tar.gz
 	cd lighttpd-1.4.28
 	
-	sb2 ./configure --prefix=$DIR_ROOTFS  \
-	--disable-ipv6 --without-zlib --without-bzip2 \
+	sb2 ./configure LDFLAGS=-L$DIR_ROOTFS/usr/lib \
+	CFLAGS=-I$DIR_ROOTFS/usr/include \
+	--prefix=$DIR_ROOTFS/usr --disable-ipv6 \
 	--without-pcre --disable-lfs
 
 	sb2 make -j$NCPU 
-	sb2 make -j$NCPU DESTDIR=$DIR_ROOTFS install  
+	sb2 make -j$NCPU install  
 
 	# Run lighttpd -f /etc/lighttpd/lighttpd.conf -D
 	read -p 'Lighttpd Server OK. Process create <ramdisk.gz>. ENTER'; 

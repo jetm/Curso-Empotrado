@@ -1,19 +1,19 @@
 ##########################################################################
 #
 # Final Proyect: 
-# 		Desarrollo de Sistemas Empotrados Basados en Linux. 
+# 		"Desarrollo de Sistemas Empotrados Basados en Linux"
 #		Profesor: Diego Dompe. 2010
 # 
-# Setup Environment Develop	for Cross Compilation:
-# 	- Compiler and toolchain (CodeSourcery)
+# Setup Environment Develop for Cross-Compilation:
+# 	- Compiler and Toolchain (CodeSourcery)
 #	- Emulator (QEMU From Maemo) 
-#	- Cross-compilation Toolkit (Scratchbox2 from Maemo)
+#	- Cross-Compilation Toolkit (Scratchbox2 from Maemo)
 #	
-# Authors
-#	- Rocio Briceño (R)
-#	- Jose David Delgado (JD) 
-#	- Stephan Salazar (S)
-#	- Javier Tiá (J)
+# Authors:
+#	- Rocio Briceño 		(R)
+#	- Jose David Delgado 	(JD) 
+#	- Stephan Salazar 		(S)
+#	- Javier Tiá 			(J)
 #
 ##########################################################################
 

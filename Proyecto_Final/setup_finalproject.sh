@@ -549,7 +549,7 @@ sudo chmod -v +x $DIR_ROOTFS/etc/init.d/rcS
 
 echo '
 #
-# lighttpd.conf for Curso Empotrado
+# lighttpd.conf Example Configuration for Curso Empotrado
 #
 
 server.document-root 	= "/var/www/html"
@@ -563,6 +563,7 @@ server.tag 				= "lighttpd"
 server.errorlog         = "/var/log/lighttpd/error.log"
 accesslog.filename      = "/var/log/lighttpd/access.log"
 
+# Example use zlib, bzip2 Support 
 server.modules          = (
 		"mod_access",
 		"mod_compress",
@@ -571,6 +572,16 @@ server.modules          = (
 		"mod_rewrite"
 	    ,"mod_auth"
 )
+
+#
+# Example use PCRE Support
+#
+# disable range requests for pdf files
+# workaround for a bug in the Acrobat Reader plugin.
+#
+$HTTP["url"] =~ "\.pdf$" {
+      server.range-requests = "disable"
+} 
 
 # mimetype mapping
 mimetype.assign  = (
@@ -595,29 +606,6 @@ echo '<html><title>Curso Empotrado</title><body>
 </body></html>
 ' > $DIR_ROOTFS/var/www/html/index.html
 
-#echo -e 'audio       0:5 0666
-#console     0:5 0600
-#control.*   0:0 0660 @/bin/mv /dev/$MDEV /dev/snd/
-#dsp         0:5 0666
-#event.*     0:0 0600 @/bin/mv /dev/$MDEV /dev/input/
-#fb          0:5 0666
-#nfs         0:5 0770
-#null        0:0 0777
-#pcm.*       0:0 0660 @/bin/mv /dev/$MDEV /dev/snd/
-#rtc         0:0 0666
-#tty         0:5 0660
-#tty0*       0:5 0660
-#tty1*       0:5 0660
-#tty2*       0:5 0660
-#tty3*       0:5 0660
-#tty4*       0:5 0660
-#tty5*       0:5 0660
-#tty6*       0:5 0660
-#ttyS*       0:5 0640
-#urandom     0:0 0444
-#zero        0:0 0666
-#' > $DIR_ROOTFS/etc/mdev.conf
-
 echo '
  ____         __ _   _       _         __  _   _ ____  
 / ___|  ___  / _| |_| |_ ___| | __    / / | | | |  _ \ 
@@ -627,9 +615,11 @@ echo '
 
 ' > $DIR_ROOTFS/etc/motd
 
+
 cd $DIR_ROOTFS/lib
 cp -ra $DIR_COMPILER/arm-none-linux-gnueabi/libc/lib/* . && \
 cd modules && arm-none-linux-gnueabi-strip $(find . -name '*.ko')
+
 
 echo ''
 read -p 'Setup Root File System OK. Process install/setup Tarea 2. ENTER'; 
@@ -689,15 +679,16 @@ function setup_lighttpd() {
 	tar xf lighttpd-1.4.28.tar.gz
 	cd lighttpd-1.4.28
 	
+	# pcre, zlib and bzip2 Support
 	sb2 ./configure LDFLAGS=-L$DIR_ROOTFS/usr/lib \
 	CFLAGS=-I$DIR_ROOTFS/usr/include \
 	--prefix=$DIR_ROOTFS/usr --disable-ipv6 \
-	--without-pcre --disable-lfs
+	--disable-lfs
 
 	sb2 make -j$NCPU 
 	sb2 make -j$NCPU install  
 
-	# Run lighttpd -f /etc/lighttpd/lighttpd.conf -D
+	# Run lighttpd -D -f /etc/lighttpd/lighttpd.conf -m /usr/lib
 	read -p 'Lighttpd Server OK. Process create <ramdisk.gz>. ENTER'; 
 
 	cd $DIR_ROOT
@@ -718,8 +709,7 @@ function setup_ramdisk() {
 	DIR_RD_EXT2=$DIR_ROOT/rd-ext2_$(date +%s)
 	mkdir -p $DIR_RD_EXT2
 
-	sudo mount -t ext2 $FILE_MOUNT $DIR_RD_EXT2 -o loop #|| \ 
-#{ sync && sudo umount $DIR_RD_EXT2; rm $DIR_RD_EXT2; exit 1; }
+	sudo mount -t ext2 $FILE_MOUNT $DIR_RD_EXT2 -o loop 
 
 	tar -C $DIR_ROOTFS -cf - . | sudo tar -C $DIR_RD_EXT2 -xf - && \
 	
@@ -756,8 +746,7 @@ function setup_sdcard() {
 		gunzip $fileSD
   	fi
 
-	sudo mount -o rw,loop,offset=32256 $DIR_ROOT/$(basename $fileSD .gz) $DIR_SD_CARD #|| \ 
-#{ sync && sudo umount $DIR_SD_CARD; rm $DIR_SD_CARD; exit 1; }
+	sudo mount -o rw,loop,offset=32256 $DIR_ROOT/$(basename $fileSD .gz) $DIR_SD_CARD
 
 	# Copy NEW ramdisk.gz
 	sudo cp -vu $DIR_ROOT/ramdisk.gz $DIR_SD_CARD && \
@@ -799,7 +788,7 @@ setup_emulator && \
 setup_sb2 && \
 setup_kernel && \
 setup_busybox && setup_rootfs && \
-#setup_tarea2 && \
+setup_tarea2 && \
 setup_lighttpd && \
 setup_ramdisk && \
 setup_sdcard && \

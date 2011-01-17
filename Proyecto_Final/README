@@ -17,15 +17,20 @@
 #
 ##########################################################################
 
-- Install
+- Install:
 	git clone git@github.com:jetm/Curso-Empotrado.git
 	cd Curso-Empotrado/Proyecto_Final
 	chmod +x setup_finalproject.sh
 	./setup_finalproject.sh
 
-- For Run Tarea2, just run in terminal:
+- Run Tarea2:
 	tarea2 -i <IP Address> -m <Mask Network>
 
-- Lighttpd on port 30000 and from console run with:
+- Lighttpd on port 30000 with pcre, zlib and bzip2 Support
+
+	Execute:
 	lighttpd -D -f /etc/lighttpd/lighttpd.conf -m /usr/lib
+
+	Check Support PCRE, zlib and bzip2:
+	lighttpd -V | egrep --color 'PCRE|zlib|bzip2'
 
